@@ -1,7 +1,8 @@
-import { Suspense } from "react";
-import Link from "next/link";
-import Range from "@/components/Range/Range";
-import { RangeService } from "@/services/api";
+import Link from 'next/link';
+import { Suspense } from 'react';
+
+import Range from '@/components/Range/Range';
+import { RangeService } from '@/services/api';
 
 async function NormalRangeComponent() {
   const data = await RangeService.getNormalRange();
@@ -12,23 +13,20 @@ async function NormalRangeComponent() {
 
 export default function Page() {
   return (
-    <div className="container">
-      <div className="home-content">
-        <h2>Exercise 1: Normal Range</h2>
-        <p>Custom range with editable labels and two handles.</p>
-        <ul>
-          <li>• Click on the min/max labels to edit values directly</li>
-          <li>• Values are constrained within the valid range</li>
-          <li>• Handles cannot cross each other</li>
-        </ul>
-        <div className="demo-section">
-          <h3>Demo</h3>
-          <Suspense fallback={<div className="loading">Loading range data...</div>}>
-            <NormalRangeComponent />
-          </Suspense>
-        </div>
-        <p><Link href="/">← Back</Link></p>
+    <main style={{ maxWidth: 720, margin: "40px auto", padding: "0 16px" }}>
+      <h2>Exercise 1: Normal Range</h2>
+      <p>Custom range con dos handles y labels editables.</p>
+      <ul>
+        <li>• Click en min/max para editar</li>
+        <li>• Clamp dentro del rango</li>
+        <li>• Los handles no se cruzan</li>
+      </ul>
+      <div style={{ marginTop: 24 }}>
+        <Suspense fallback={<div>Loading range data...</div>}>
+          <NormalRangeComponent />
+        </Suspense>
       </div>
-    </div>
+      <p style={{ marginTop: 24 }}><Link href="/">← Volver</Link></p>
+    </main>
   );
 }

@@ -1,165 +1,23 @@
+/* Contenedor general del componente */
 .rangeContainer {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.75rem;
   align-items: center;
-  gap: 1rem;
-  padding: 2rem 0;
-  width: 100%;
-  min-width: 280px;
-  user-select: none;
 }
 
+/* Etiquetas */
 .labelContainer {
   display: flex;
   align-items: center;
-  justify-content: center;
-  min-width: 80px;
-}
-
-.label {
-  font-size: 14px;
-  font-weight: 500;
-  color: #333;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  transition: background-color 0.2s ease;
-  white-space: nowrap;
-}
-
-.label.clickable {
-  cursor: pointer;
-}
-
-.label.clickable:hover {
-  background-color: #f0f0f0;
-}
-
-.labelInput {
-  width: 80px;
-  padding: 0.25rem 0.5rem;
-  border: 2px solid #007bff;
-  border-radius: 4px;
-  font-size: 14px;
-  font-weight: 500;
-  outline: none;
-  text-align: center;
-}
-
-.rangeTrack {
-  flex: 1;
-  height: 6px;
-  background-color: #ddd;
-  border-radius: 3px;
-  position: relative;
-  cursor: pointer;
-  margin: 0 12px;
-}
-
-.rangeProgress {
-  position: absolute;
-  height: 100%;
-  background: linear-gradient(90deg, #007bff, #0056b3);
-  border-radius: 3px;
-  pointer-events: none;
-}
-
-.handle {
-  position: absolute;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: white;
-  border: 2px solid #007bff;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  cursor: grab;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-  padding: 0;
-  z-index: 2;
-}
-
-.handle:hover {
-  width: 28px;
-  height: 28px;
-  border-width: 3px;
-  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
-}
-
-.handle:active,
-.handle.dragging {
-  cursor: grabbing;
-  width: 28px;
-  height: 28px;
-  background: #007bff;
-  border-color: #0056b3;
-  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
-}
-
-.handle:focus {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2);
-}
-
-@media (max-width: 640px) {
-  .rangeContainer {
-    gap: 0.75rem;
-    padding: 1.5rem 0;
-  }
-
-  .labelContainer {
-    min-width: 60px;
-  }
-
-  .label {
-    font-size: 12px;
-  }
-
-  .labelInput {
-    width: 60px;
-    font-size: 12px;
-  }
-
-  .handle {
-    width: 20px;
-    height: 20px;
-  }
-
-  .handle:hover,
-  .handle:active,
-  .handle.dragging {
-    width: 24px;
-    height: 24px;
-  }
-}
-
-.handle {
-  cursor: grab;
-  outline: none;
-}
-
-.handle:focus-visible {
-  box-shadow: 0 0 0 3px rgba(0, 120, 255, .5);
-  border-radius: 50%;
-}
-
-.range {
-  position: absolute;
-  height: 6px;
-  background: #222;
-  border-radius: 3px;
-}
-
-.track {
-  position: relative;
-  height: 6px;
-  background: #ddd;
-  border-radius: 3px;
 }
 
 .label {
   padding: .25rem .5rem;
   border-radius: .375rem;
   background: #f7f7f7;
+  border: 1px solid #e5e5e5;
+  font-variant-numeric: tabular-nums;
 }
 
 .label.clickable {
@@ -167,8 +25,138 @@
 }
 
 .labelInput {
-  width: 80px;
+  width: 84px;
   padding: .25rem .5rem;
-  border: 1px solid #ccc;
+  border: 1px solid #cfcfcf;
   border-radius: .375rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Pista */
+.track {
+  position: relative;
+  height: 6px;
+  background: #e8e8e8;
+  border-radius: 999px;
+}
+
+.range {
+  position: absolute;
+  top: 0;
+  height: 6px;
+  background: #222;
+  border-radius: 999px;
+}
+
+/* Handles */
+.handle {
+  position: absolute;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: white;
+  border: 2px solid #222;
+  transform: translate(-50%, -50%);
+  cursor: grab;
+  outline: none;
+  transition: transform .1s ease;
+}
+
+.handle:hover {
+  transform: translate(-50%, -50%) scale(1.08);
+}
+
+.handle:active {
+  cursor: grabbing;
+}
+
+.handle:focus-visible {
+  box-shadow: 0 0 0 3px rgba(0, 120, 255, .45);
+}
+
+/* Tooltip */
+.tooltip {
+  position: absolute;
+  padding: 2px 6px;
+  font-size: 12px;
+  line-height: 1.2;
+  background: #111;
+  color: #fff;
+  border-radius: 4px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* Ticks (modo fixed) */
+.ticks {
+  position: relative;
+  height: 20px;
+  margin-top: 8px;
+}
+
+.tick {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  text-align: center;
+  font-size: 11px;
+  color: #666;
+}
+
+.tick::before {
+  content: "";
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1px;
+  height: 8px;
+  background: currentColor;
+  opacity: 0.6;
+}
+
+/* Responsive básico */
+@media (max-width: 480px) {
+
+  .label,
+  .labelInput {
+    font-size: 14px;
+  }
+
+  .handle {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  .label {
+    background: #2b2b2b;
+    color: #e9e9e9;
+    border-color: #3a3a3a;
+  }
+
+  .track {
+    background: #3a3a3a;
+  }
+
+  .range {
+    background: #e9e9e9;
+  }
+
+  .handle {
+    background: #0f0f0f;
+    border-color: #e9e9e9;
+  }
+
+  .tooltip {
+    background: #e9e9e9;
+    color: #0f0f0f;
+  }
+
+  .tick {
+    color: #bdbdbd;
+  }
 }

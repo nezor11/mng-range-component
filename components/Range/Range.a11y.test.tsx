@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { test, expect } from 'vitest';
+
 import Range from './Range';
 
 test('renderiza dos sliders con ARIA en modo normal', () => {
@@ -16,9 +16,8 @@ test('no cruza valores al mover con teclado', async () => {
   render(<Range mode="normal" min={0} max={10} initialMin={4} initialMax={6} />);
   const [minH, maxH] = screen.getAllByRole('slider');
 
-  // Llevar min hacia la derecha (intenta cruzar)
   minH.focus();
-  await user.keyboard('{End}');
+  await user.keyboard('{End}'); // intenta ir al máximo
 
   const minNow = Number(minH.getAttribute('aria-valuenow'));
   const maxNow = Number(maxH.getAttribute('aria-valuenow'));

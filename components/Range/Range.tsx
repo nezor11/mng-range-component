@@ -1,9 +1,10 @@
-// components/Range/Range.tsx
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+
 import styles from './Range.module.css';
 import { clamp, snapToFixed, valueToPct, pctToValue, uniqSorted } from './utils';
+
 import type { RangeProps, RangeValue } from './Range.types';
 
 export default function Range({
@@ -17,7 +18,6 @@ export default function Range({
   onChange,
   className
 }: RangeProps) {
-  // Normaliza límites según modo
   const [lo, hi] = useMemo(() => {
     if (mode === 'fixed') {
       const vals = uniqSorted(fixedValues);
@@ -26,7 +26,6 @@ export default function Range({
     return [min, max];
   }, [mode, min, max, fixedValues]);
 
-  // Estado controlado del rango actual
   const [value, setValue] = useState<RangeValue>(() => {
     if (mode === 'fixed') {
       const vals = uniqSorted(fixedValues);
@@ -46,22 +45,30 @@ export default function Range({
     }
   });
 
-  // Avisar cambios (throttle-free y simple)
   useEffect(() => { onChange?.(value); }, [value, onChange]);
 
-  // Refs para drag
   const trackRef = useRef<HTMLDivElement | null>(null);
   const draggingRef = useRef<null | 'min' | 'max'>(null);
 
-  // Helpers
-  const setMin = (n: number) => setValue(v => {
-    const next = clamp(n, lo, v.max);
-    return next === v.min ? v : { ...v, min: next };
-  });
-  const setMax = (n: number) => setValue(v => {
-    const next = clamp(n, v.min, hi);
-    return next === v.max ? v : { ...v, max: next };
-  });
+  // Tooltip
+  const [showTooltip, setShowTooltip] = useState<null | 'min' | 'max'>(null);
+  const [tooltipLeft, setTooltipLeft] = useState<number>(0);
+  const [tooltipValue, setTooltipValue] = useState<number>(0);
+
+  // 🔒 Callbacks estables (contentan a exhaustive-deps)
+  const setMin = useCallback((n: number) => {
+    setValue(v => {
+      const next = clamp(n, lo, v.max);
+      return next === v.min ? v : { ...v, min: next };
+    });
+  }, [lo]);
+
+  const setMax = useCallback((n: number) => {
+    setValue(v => {
+      const next = clamp(n, v.min, hi);
+      return next === v.max ? v : { ...v, max: next };
+    });
+  }, [hi]);
 
   const toPct = (n: number) => valueToPct(n, lo, hi);
 
@@ -71,6 +78,7 @@ export default function Range({
     document.body.style.cursor = 'grabbing';
   };
 
+  // 🎯 Pointer events (con deps completas)
   useEffect(() => {
     const onMove = (e: PointerEvent) => {
       if (!draggingRef.current || !trackRef.current) return;
@@ -82,18 +90,24 @@ export default function Range({
 
       if (draggingRef.current === 'min') setMin(raw);
       else setMax(raw);
+
+      setShowTooltip(draggingRef.current);
+      setTooltipLeft(x);
+      setTooltipValue(raw);
     };
-    const onUp = () => { draggingRef.current = null; document.body.style.cursor = ''; };
+    const onUp = () => {
+      draggingRef.current = null;
+      document.body.style.cursor = '';
+      setShowTooltip(null);
+    };
+
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
-    return () => { window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp); };
-  }, [lo, hi, mode, fixedValues]);
-
-  // Teclado
-  const stepFor = useCallback((which: 'min' | 'max') => {
-    if (mode === 'fixed') return 1; // por índice
-    return 1; // podrías parametrizar 'step'
-  }, [mode]);
+    return () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+  }, [lo, hi, mode, fixedValues, setMin, setMax]);
 
   const moveBy = (which: 'min' | 'max', delta: number) => {
     if (mode === 'fixed') {
@@ -104,8 +118,8 @@ export default function Range({
       const candidate = list[nextIdx];
       which === 'min' ? setMin(candidate) : setMax(candidate);
     } else {
-      const s = stepFor(which);
-      which === 'min' ? setMin(value.min + delta * s) : setMax(value.max + delta * s);
+      const step = 1;
+      which === 'min' ? setMin(value.min + delta * step) : setMax(value.max + delta * step);
     }
   };
 
@@ -114,8 +128,15 @@ export default function Range({
     else setMax(to === 'end' ? hi : value.min);
   };
 
-  // Labels (editables solo en normal)
+  // 🧑‍🦯 Enfoque de inputs sin autoFocus (a11y)
   const [editing, setEditing] = useState<{ min: boolean; max: boolean }>({ min: false, max: false });
+  const minInputRef = useRef<HTMLInputElement>(null);
+  const maxInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (editing.min) minInputRef.current?.focus();
+    if (editing.max) maxInputRef.current?.focus();
+  }, [editing.min, editing.max]);
 
   const submitLabel = (which: 'min' | 'max', raw: string) => {
     const parsed = Number(raw.replace(',', '.'));
@@ -135,8 +156,8 @@ export default function Range({
           <span className={styles.label}>{formatted(value.min)}</span>
         ) : editing.min ? (
           <input
+            ref={minInputRef}
             className={styles.labelInput}
-            autoFocus
             defaultValue={String(value.min)}
             onBlur={(e) => submitLabel('min', e.currentTarget.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') submitLabel('min', (e.target as HTMLInputElement).value); }}
@@ -174,6 +195,14 @@ export default function Range({
             if (e.key === 'PageUp') moveBy('min', +10);
             if (e.key === 'PageDown') moveBy('min', -10);
           }}
+          onMouseEnter={() => {
+            if (!trackRef.current) return;
+            const w = trackRef.current.getBoundingClientRect().width;
+            setTooltipLeft(w * toPct(value.min) / 100);
+            setTooltipValue(value.min);
+            setShowTooltip('min');
+          }}
+          onMouseLeave={() => setShowTooltip(null)}
         />
 
         {/* Handle max */}
@@ -195,7 +224,26 @@ export default function Range({
             if (e.key === 'PageUp') moveBy('max', +10);
             if (e.key === 'PageDown') moveBy('max', -10);
           }}
+          onMouseEnter={() => {
+            if (!trackRef.current) return;
+            const w = trackRef.current.getBoundingClientRect().width;
+            setTooltipLeft(w * toPct(value.max) / 100);
+            setTooltipValue(value.max);
+            setShowTooltip('max');
+          }}
+          onMouseLeave={() => setShowTooltip(null)}
         />
+
+        {/* Tooltip */}
+        {showTooltip && (
+          <div
+            className={styles.tooltip}
+            style={{ left: tooltipLeft, transform: 'translateX(-50%)', top: -32 }}
+            aria-hidden="true"
+          >
+            {currency ? `${tooltipValue.toFixed(2)}${currency}` : Math.round(tooltipValue)}
+          </div>
+        )}
       </div>
 
       {/* Label max */}
@@ -204,8 +252,8 @@ export default function Range({
           <span className={styles.label}>{formatted(value.max)}</span>
         ) : editing.max ? (
           <input
+            ref={maxInputRef}
             className={styles.labelInput}
-            autoFocus
             defaultValue={String(value.max)}
             onBlur={(e) => submitLabel('max', e.currentTarget.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') submitLabel('max', (e.target as HTMLInputElement).value); }}
@@ -216,6 +264,16 @@ export default function Range({
           </button>
         )}
       </div>
+
+      {mode === 'fixed' && (
+        <div className={styles.ticks}>
+          {uniqSorted(fixedValues).map((v) => (
+            <div key={v} className={styles.tick} style={{ left: `${toPct(v)}%` }}>
+              <span>{currency ? `${v.toFixed(2)}${currency}` : v}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

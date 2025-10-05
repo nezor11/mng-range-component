@@ -1,26 +1,13 @@
-import { normalRangeData, fixedRangeData } from "./mockData";
+// services/api.ts
+const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
-interface RangeData {
-  min: number;
-  max: number;
-}
-
-interface FixedRangeData {
-  rangeValues: number[];
-}
-
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-export class RangeService {
-  static async getNormalRange(): Promise<RangeData> {
-    // Simular llamada API con delay
-    await delay(100);
-    return normalRangeData;
-  }
-
-  static async getFixedRange(): Promise<FixedRangeData> {
-    // Simular llamada API con delay
-    await delay(100);
-    return fixedRangeData;
-  }
-}
+export const RangeService = {
+  async getNormalRange(): Promise<{ min: number; max: number }> {
+    await delay(200);
+    return { min: 1, max: 100 };
+  },
+  async getFixedRange(): Promise<{ rangeValues: number[] }> {
+    await delay(200);
+    return { rangeValues: [1.99, 5.99, 10.99, 30.99, 50.99, 70.99] };
+  },
+};
