@@ -1,0 +1,174 @@
+.rangeContainer {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem 0;
+  width: 100%;
+  min-width: 280px;
+  user-select: none;
+}
+
+.labelContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 80px;
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+  white-space: nowrap;
+}
+
+.label.clickable {
+  cursor: pointer;
+}
+
+.label.clickable:hover {
+  background-color: #f0f0f0;
+}
+
+.labelInput {
+  width: 80px;
+  padding: 0.25rem 0.5rem;
+  border: 2px solid #007bff;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  outline: none;
+  text-align: center;
+}
+
+.rangeTrack {
+  flex: 1;
+  height: 6px;
+  background-color: #ddd;
+  border-radius: 3px;
+  position: relative;
+  cursor: pointer;
+  margin: 0 12px;
+}
+
+.rangeProgress {
+  position: absolute;
+  height: 100%;
+  background: linear-gradient(90deg, #007bff, #0056b3);
+  border-radius: 3px;
+  pointer-events: none;
+}
+
+.handle {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: white;
+  border: 2px solid #007bff;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  cursor: grab;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  padding: 0;
+  z-index: 2;
+}
+
+.handle:hover {
+  width: 28px;
+  height: 28px;
+  border-width: 3px;
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+}
+
+.handle:active,
+.handle.dragging {
+  cursor: grabbing;
+  width: 28px;
+  height: 28px;
+  background: #007bff;
+  border-color: #0056b3;
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
+}
+
+.handle:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2);
+}
+
+@media (max-width: 640px) {
+  .rangeContainer {
+    gap: 0.75rem;
+    padding: 1.5rem 0;
+  }
+
+  .labelContainer {
+    min-width: 60px;
+  }
+
+  .label {
+    font-size: 12px;
+  }
+
+  .labelInput {
+    width: 60px;
+    font-size: 12px;
+  }
+
+  .handle {
+    width: 20px;
+    height: 20px;
+  }
+
+  .handle:hover,
+  .handle:active,
+  .handle.dragging {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+.handle {
+  cursor: grab;
+  outline: none;
+}
+
+.handle:focus-visible {
+  box-shadow: 0 0 0 3px rgba(0, 120, 255, .5);
+  border-radius: 50%;
+}
+
+.range {
+  position: absolute;
+  height: 6px;
+  background: #222;
+  border-radius: 3px;
+}
+
+.track {
+  position: relative;
+  height: 6px;
+  background: #ddd;
+  border-radius: 3px;
+}
+
+.label {
+  padding: .25rem .5rem;
+  border-radius: .375rem;
+  background: #f7f7f7;
+}
+
+.label.clickable {
+  cursor: pointer;
+}
+
+.labelInput {
+  width: 80px;
+  padding: .25rem .5rem;
+  border: 1px solid #ccc;
+  border-radius: .375rem;
+}
