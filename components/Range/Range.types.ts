@@ -3,7 +3,7 @@ export type RangeValue = {
   max: number;
 };
 
-export type RangeProps = {
+export interface RangeProps {
   mode: 'normal' | 'fixed';
   /** Only for mode="normal" */
   min?: number;
@@ -17,4 +17,4 @@ export type RangeProps = {
   currency?: string;
   onChange?: (value: RangeValue) => void;
   className?: string;
-};
+}

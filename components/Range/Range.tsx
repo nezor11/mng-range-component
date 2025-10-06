@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import styles from './Range.module.css';
 import { clamp, snapToFixed, valueToPct, pctToValue, uniqSorted } from './utils';
@@ -18,16 +18,20 @@ export default function Range({
   onChange,
   className
 }: RangeProps) {
+  const modeValue = mode as 'normal' | 'fixed';
+
+  // límites efectivos (en fixed vienen de los propios valores fijos)
   const [lo, hi] = useMemo(() => {
-    if (mode === 'fixed') {
+    if (modeValue === 'fixed') {
       const vals = uniqSorted(fixedValues);
       return [vals[0] ?? 0, vals[vals.length - 1] ?? 0];
     }
     return [min, max];
-  }, [mode, min, max, fixedValues]);
+  }, [modeValue, min, max, fixedValues]);
 
+  // estado del rango
   const [value, setValue] = useState<RangeValue>(() => {
-    if (mode === 'fixed') {
+    if (modeValue === 'fixed') {
       const vals = uniqSorted(fixedValues);
       const start = vals[0] ?? 0;
       const end = vals[vals.length - 1] ?? start;
@@ -45,17 +49,18 @@ export default function Range({
     }
   });
 
+  // emite cambios
   useEffect(() => { onChange?.(value); }, [value, onChange]);
 
+  // refs + tooltip
   const trackRef = useRef<HTMLDivElement | null>(null);
   const draggingRef = useRef<null | 'min' | 'max'>(null);
 
-  // Tooltip
   const [showTooltip, setShowTooltip] = useState<null | 'min' | 'max'>(null);
   const [tooltipLeft, setTooltipLeft] = useState<number>(0);
   const [tooltipValue, setTooltipValue] = useState<number>(0);
 
-  // 🔒 Callbacks estables (contentan a exhaustive-deps)
+  // setters clamp-safe
   const setMin = useCallback((n: number) => {
     setValue(v => {
       const next = clamp(n, lo, v.max);
@@ -78,7 +83,7 @@ export default function Range({
     document.body.style.cursor = 'grabbing';
   };
 
-  // 🎯 Pointer events (con deps completas)
+  // pointer events
   useEffect(() => {
     const onMove = (e: PointerEvent) => {
       if (!draggingRef.current || !trackRef.current) return;
@@ -86,7 +91,7 @@ export default function Range({
       const x = clamp(e.clientX - rect.left, 0, rect.width);
       const pct = (x / rect.width) * 100;
       let raw = pctToValue(pct, lo, hi);
-      if (mode === 'fixed') raw = snapToFixed(raw, fixedValues);
+      if (modeValue === 'fixed') raw = snapToFixed(raw, fixedValues);
 
       if (draggingRef.current === 'min') setMin(raw);
       else setMax(raw);
@@ -107,10 +112,11 @@ export default function Range({
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
     };
-  }, [lo, hi, mode, fixedValues, setMin, setMax]);
+  }, [lo, hi, modeValue, fixedValues, setMin, setMax]);
 
+  // teclado
   const moveBy = (which: 'min' | 'max', delta: number) => {
-    if (mode === 'fixed') {
+    if (modeValue === 'fixed') {
       const list = uniqSorted(fixedValues);
       const curr = which === 'min' ? value.min : value.max;
       const idx = Math.max(0, list.findIndex(v => v === snapToFixed(curr, list)));
@@ -128,7 +134,7 @@ export default function Range({
     else setMax(to === 'end' ? hi : value.min);
   };
 
-  // 🧑‍🦯 Enfoque de inputs sin autoFocus (a11y)
+  // edición por label
   const [editing, setEditing] = useState<{ min: boolean; max: boolean }>({ min: false, max: false });
   const minInputRef = useRef<HTMLInputElement>(null);
   const maxInputRef = useRef<HTMLInputElement>(null);
@@ -141,7 +147,7 @@ export default function Range({
   const submitLabel = (which: 'min' | 'max', raw: string) => {
     const parsed = Number(raw.replace(',', '.'));
     if (Number.isNaN(parsed)) return;
-    if (mode === 'fixed') return; // no editable en fixed
+    if (modeValue === 'fixed') return; // no editable en fixed
     which === 'min' ? setMin(parsed) : setMax(parsed);
     setEditing(e => ({ ...e, [which]: false }));
   };
@@ -152,7 +158,7 @@ export default function Range({
     <div className={`${styles.rangeContainer} ${className ?? ''}`}>
       {/* Label min */}
       <div className={styles.labelContainer}>
-        {mode === 'fixed' ? (
+        {modeValue === 'fixed' ? (
           <span className={styles.label}>{formatted(value.min)}</span>
         ) : editing.min ? (
           <input
@@ -171,10 +177,13 @@ export default function Range({
 
       {/* Track + handles */}
       <div ref={trackRef} className={styles.track}>
-        <div className={styles.range} style={{
-          left: `${toPct(value.min)}%`,
-          width: `${toPct(value.max) - toPct(value.min)}%`
-        }} />
+        <div
+          className={styles.range}
+          style={{
+            left: `${toPct(value.min)}%`,
+            width: `${toPct(value.max) - toPct(value.min)}%`
+          }}
+        />
 
         {/* Handle min */}
         <div
@@ -244,11 +253,31 @@ export default function Range({
             {currency ? `${tooltipValue.toFixed(2)}${currency}` : Math.round(tooltipValue)}
           </div>
         )}
+
+        {/* Always-visible values above each handle in NORMAL mode */}
+        {modeValue === 'normal' && (
+          <>
+            <div
+              className={styles.handleValue}
+              style={{ left: `${toPct(value.min)}%` }}
+              aria-hidden
+            >
+              {currency ? `${value.min.toFixed(2)}${currency}` : value.min}
+            </div>
+            <div
+              className={styles.handleValue}
+              style={{ left: `${toPct(value.max)}%` }}
+              aria-hidden
+            >
+              {currency ? `${value.max.toFixed(2)}${currency}` : value.max}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Label max */}
       <div className={styles.labelContainer}>
-        {mode === 'fixed' ? (
+        {modeValue === 'fixed' ? (
           <span className={styles.label}>{formatted(value.max)}</span>
         ) : editing.max ? (
           <input
@@ -265,7 +294,20 @@ export default function Range({
         )}
       </div>
 
-      {mode === 'fixed' && (
+      {/* Visible clamp bounds under the track in NORMAL mode */}
+      {modeValue === 'normal' && (
+        <div className={styles.bounds}>
+          <div className={styles.boundLabel} style={{ left: '0%' }}>
+            {currency ? `${lo.toFixed(2)}${currency}` : lo}
+          </div>
+          <div className={styles.boundLabel} style={{ left: '100%' }}>
+            {currency ? `${hi.toFixed(2)}${currency}` : hi}
+          </div>
+        </div>
+      )}
+
+      {/* Ticks (solo en fixed) */}
+      {modeValue === 'fixed' && (
         <div className={styles.ticks}>
           {uniqSorted(fixedValues).map((v) => (
             <div key={v} className={styles.tick} style={{ left: `${toPct(v)}%` }}>
@@ -277,3 +319,4 @@ export default function Range({
     </div>
   );
 }
+
