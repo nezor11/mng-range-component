@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import styles from './Range.module.css';
 import { clamp, snapToFixed, valueToPct, pctToValue, uniqSorted } from './utils';
@@ -29,6 +29,11 @@ export default function Range({
     return [min, max];
   }, [modeValue, min, max, fixedValues]);
 
+  // helpers de formato/precisión
+  const round2 = (x: number) => Math.round(x * 100) / 100;
+  const format = (n: number) =>
+    currency ? `${round2(n).toFixed(2)}${currency}` : round2(n).toFixed(2);
+
   // estado del rango
   const [value, setValue] = useState<RangeValue>(() => {
     if (modeValue === 'fixed') {
@@ -39,13 +44,13 @@ export default function Range({
       const imax = initialMax ?? end;
       const vmin = clamp(snapToFixed(imin, vals), start, snapToFixed(imax, vals));
       const vmax = clamp(snapToFixed(imax, vals), vmin, end);
-      return { min: vmin, max: vmax };
+      return { min: round2(vmin), max: round2(vmax) };
     } else {
       const imin = initialMin ?? lo;
       const imax = initialMax ?? hi;
       const vmin = clamp(imin, lo, Math.min(imax, hi));
       const vmax = clamp(imax, Math.max(imin, lo), hi);
-      return { min: vmin, max: vmax };
+      return { min: round2(vmin), max: round2(vmax) };
     }
   });
 
@@ -60,17 +65,19 @@ export default function Range({
   const [tooltipLeft, setTooltipLeft] = useState<number>(0);
   const [tooltipValue, setTooltipValue] = useState<number>(0);
 
-  // setters clamp-safe
+  // setters clamp-safe + redondeo a 2 decimales
   const setMin = useCallback((n: number) => {
     setValue(v => {
-      const next = clamp(n, lo, v.max);
+      const r = round2(n);
+      const next = clamp(r, lo, v.max);
       return next === v.min ? v : { ...v, min: next };
     });
   }, [lo]);
 
   const setMax = useCallback((n: number) => {
     setValue(v => {
-      const next = clamp(n, v.min, hi);
+      const r = round2(n);
+      const next = clamp(r, v.min, hi);
       return next === v.max ? v : { ...v, max: next };
     });
   }, [hi]);
@@ -148,29 +155,31 @@ export default function Range({
     const parsed = Number(raw.replace(',', '.'));
     if (Number.isNaN(parsed)) return;
     if (modeValue === 'fixed') return; // no editable en fixed
-    which === 'min' ? setMin(parsed) : setMax(parsed);
+    const fixed = round2(parsed);
+    which === 'min' ? setMin(fixed) : setMax(fixed);
     setEditing(e => ({ ...e, [which]: false }));
   };
-
-  const formatted = (n: number) => currency ? `${n.toFixed(2)}${currency}` : `${n}`;
 
   return (
     <div className={`${styles.rangeContainer} ${className ?? ''}`}>
       {/* Label min */}
       <div className={styles.labelContainer}>
         {modeValue === 'fixed' ? (
-          <span className={styles.label}>{formatted(value.min)}</span>
+          <span className={styles.label}>{format(value.min)}</span>
         ) : editing.min ? (
           <input
             ref={minInputRef}
             className={styles.labelInput}
-            defaultValue={String(value.min)}
+            defaultValue={value.min.toFixed(2)}
+            inputMode="decimal"
+            step="0.01"
+            pattern="^-?\\d+(?:[\\.,]\\d{0,2})?$"
             onBlur={(e) => submitLabel('min', e.currentTarget.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') submitLabel('min', (e.target as HTMLInputElement).value); }}
           />
         ) : (
           <button className={`${styles.label} ${styles.clickable}`} onClick={() => setEditing(e => ({ ...e, min: true }))}>
-            {formatted(value.min)}
+            {format(value.min)}
           </button>
         )}
       </div>
@@ -193,6 +202,7 @@ export default function Range({
           aria-valuemin={lo}
           aria-valuemax={hi}
           aria-valuenow={value.min}
+          aria-valuetext={format(value.min)}
           className={styles.handle}
           style={{ left: `${toPct(value.min)}%` }}
           onPointerDown={startDrag('min')}
@@ -222,6 +232,7 @@ export default function Range({
           aria-valuemin={lo}
           aria-valuemax={hi}
           aria-valuenow={value.max}
+          aria-valuetext={format(value.max)}
           className={styles.handle}
           style={{ left: `${toPct(value.max)}%` }}
           onPointerDown={startDrag('max')}
@@ -250,7 +261,7 @@ export default function Range({
             style={{ left: tooltipLeft, transform: 'translateX(-50%)', top: -32 }}
             aria-hidden="true"
           >
-            {currency ? `${tooltipValue.toFixed(2)}${currency}` : Math.round(tooltipValue)}
+            {format(tooltipValue)}
           </div>
         )}
 
@@ -262,14 +273,14 @@ export default function Range({
               style={{ left: `${toPct(value.min)}%` }}
               aria-hidden
             >
-              {currency ? `${value.min.toFixed(2)}${currency}` : value.min}
+              {format(value.min)}
             </div>
             <div
               className={styles.handleValue}
               style={{ left: `${toPct(value.max)}%` }}
               aria-hidden
             >
-              {currency ? `${value.max.toFixed(2)}${currency}` : value.max}
+              {format(value.max)}
             </div>
           </>
         )}
@@ -278,18 +289,21 @@ export default function Range({
       {/* Label max */}
       <div className={styles.labelContainer}>
         {modeValue === 'fixed' ? (
-          <span className={styles.label}>{formatted(value.max)}</span>
+          <span className={styles.label}>{format(value.max)}</span>
         ) : editing.max ? (
           <input
             ref={maxInputRef}
             className={styles.labelInput}
-            defaultValue={String(value.max)}
+            defaultValue={value.max.toFixed(2)}
+            inputMode="decimal"
+            step="0.01"
+            pattern="^-?\\d+(?:[\\.,]\\d{0,2})?$"
             onBlur={(e) => submitLabel('max', e.currentTarget.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') submitLabel('max', (e.target as HTMLInputElement).value); }}
           />
         ) : (
           <button className={`${styles.label} ${styles.clickable}`} onClick={() => setEditing(e => ({ ...e, max: true }))}>
-            {formatted(value.max)}
+            {format(value.max)}
           </button>
         )}
       </div>
@@ -298,10 +312,10 @@ export default function Range({
       {modeValue === 'normal' && (
         <div className={styles.bounds}>
           <div className={styles.boundLabel} style={{ left: '0%' }}>
-            {currency ? `${lo.toFixed(2)}${currency}` : lo}
+            {format(lo)}
           </div>
           <div className={styles.boundLabel} style={{ left: '100%' }}>
-            {currency ? `${hi.toFixed(2)}${currency}` : hi}
+            {format(hi)}
           </div>
         </div>
       )}
@@ -311,7 +325,7 @@ export default function Range({
         <div className={styles.ticks}>
           {uniqSorted(fixedValues).map((v) => (
             <div key={v} className={styles.tick} style={{ left: `${toPct(v)}%` }}>
-              <span>{currency ? `${v.toFixed(2)}${currency}` : v}</span>
+              <span>{format(v)}</span>
             </div>
           ))}
         </div>
@@ -319,4 +333,3 @@ export default function Range({
     </div>
   );
 }
-
